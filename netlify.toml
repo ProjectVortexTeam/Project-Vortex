@@ -1,10 +1,4 @@
 [build]
-  # Tell Netlify to run build in client folder
-  base = "client"
-  command = "npm run build"
+  base = ""
+  command = "npm run build --prefix client"
   publish = "client/dist"
-  functions = "server"
-
-[functions]
-  # If you need to specify settings for functions, like TS support, etc.
-  node_bundler = "esbuild"
