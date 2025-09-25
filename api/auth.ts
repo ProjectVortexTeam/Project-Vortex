@@ -1,39 +1,26 @@
+// api/auth.ts
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { scrypt, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { storage } from "./storage";
-import { User as SelectUser } from "../shared/schema";
-
-declare global {
-  namespace Express {
-    interface User extends SelectUser {}
-  }
-}
+import { storage } from "./storage.js";
 
 const scryptAsync = promisify(scrypt);
 
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
-
-async function comparePasswords(supplied: string, stored: string) {
+export async function comparePasswords(supplied: string, stored: string) {
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  const suppliedBuf = await scryptAsync(supplied, salt, 64);
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-export function setupAuth(app: Express) {
-  const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET!,
+export function setupAuth(app: any) {
+  const sessionSettings = {
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: storage.sessionStore,
+    store: storage.sessionStore
   };
 
   app.set("trust proxy", 1);
@@ -41,41 +28,17 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  passport.use(
-    new LocalStrategy(async (username, password, done) => {
-      const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) {
-        return done(null, false);
-      } else {
-        return done(null, user);
-      }
-    }),
-  );
+  passport.use(new LocalStrategy(async (username, password, done) => {
+    const user = await storage.getUserByUsername(username);
+    if(!user || !(await comparePasswords(password, user.password))) return done(null,false);
+    done(null,user);
+  }));
 
-  passport.serializeUser((user, done) => done(null, user.id));
-  passport.deserializeUser(async (id: string, done) => {
-    const user = await storage.getUser(id);
-    done(null, user);
-  });
+  passport.serializeUser((user:any, done) => done(null,user.id));
+  passport.deserializeUser(async (id:string, done:any) => { const user = await storage.getUser(id); done(null,user); });
 
-  // Registration disabled for admin-only system
-  app.post("/api/register", async (req, res) => {
-    res.status(403).json({ message: "Registration is disabled. Admin access only." });
-  });
-
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
-  });
-
-  app.post("/api/logout", (req, res, next) => {
-    req.logout((err) => {
-      if (err) return next(err);
-      res.sendStatus(200);
-    });
-  });
-
-  app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
-  });
+  app.post("/api/register", async (_req,res)=>res.status(403).json({message:"Registration is disabled. Admin access only."}));
+  app.post("/api/login", passport.authenticate("local"), (req,res)=>res.status(200).json(req.user));
+  app.post("/api/logout", (req,res,next)=>req.logout(err=>err?next(err):res.sendStatus(200)));
+  app.get("/api/user", (req,res)=>!req.isAuthenticated()?res.sendStatus(401):res.json(req.user));
 }
