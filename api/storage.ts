@@ -1,4 +1,3 @@
-// api/storage.ts
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -6,13 +5,18 @@ import createMemoryStore from "memorystore";
 const MemoryStore = createMemoryStore(session);
 
 export class MemStorage {
-  users = new Map<string, any>();
-  proxyLinks = new Map<string, any>();
-  announcements = new Map<string, any>();
-  feedback = new Map<string, any>();
-  sessionStore = new MemoryStore({ checkPeriod: 864e5 });
+  users: Map<string, any>;
+  proxyLinks: Map<string, any>;
+  announcements: Map<string, any>;
+  feedback: Map<string, any>;
+  sessionStore: any;
 
   constructor() {
+    this.users = new Map();
+    this.proxyLinks = new Map();
+    this.announcements = new Map();
+    this.feedback = new Map();
+    this.sessionStore = new MemoryStore({ checkPeriod: 864e5 });
     this.initializeData();
   }
 
@@ -46,18 +50,26 @@ export class MemStorage {
 
   async getUser(id: string) { return this.users.get(id); }
   async getUserByUsername(username: string) { return Array.from(this.users.values()).find(u => u.username === username); }
-  async createUser(insertUser: any) { const id = randomUUID(); const user = { ...insertUser, id }; this.users.set(id, user); return user; }
-  async getProxyLinks() { return Array.from(this.proxyLinks.values()).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); }
-  async getActiveProxyLinks() { return Array.from(this.proxyLinks.values()).filter(p=>p.active).sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime()); }
-  async createProxyLink(insertProxyLink: any) { const id = randomUUID(); const proxyLink = { ...insertProxyLink, id, active: insertProxyLink.active ?? true, createdAt: new Date() }; this.proxyLinks.set(id, proxyLink); return proxyLink; }
-  async updateProxyLink(id: string, updates: any) { const proxyLink = this.proxyLinks.get(id); if(!proxyLink) return; const updated = {...proxyLink,...updates}; this.proxyLinks.set(id, updated); return updated; }
+  async createUser(insertUser: any) {
+    const id = randomUUID();
+    const user = { ...insertUser, id };
+    this.users.set(id, user);
+    return user;
+  }
+  async getProxyLinks() { return Array.from(this.proxyLinks.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); }
+  async getActiveProxyLinks() { return Array.from(this.proxyLinks.values()).filter(p => p.active).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); }
+  async createProxyLink(insertProxyLink: any) {
+    const id = randomUUID();
+    const proxyLink = { ...insertProxyLink, id, active: insertProxyLink.active ?? true, createdAt: new Date() };
+    this.proxyLinks.set(id, proxyLink);
+    return proxyLink;
+  }
+  async updateProxyLink(id: string, updates: any) {
+    const proxyLink = this.proxyLinks.get(id);
+    if (!proxyLink) return;
+    const updated = { ...proxyLink, ...updates };
+    this.proxyLinks.set(id, updated);
+    return updated;
+  }
   async deleteProxyLink(id: string) { return this.proxyLinks.delete(id); }
-  async getAnnouncements() { return Array.from(this.announcements.values()).sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime()); }
-  async getAnnouncementsByType(type: string) { return Array.from(this.announcements.values()).filter(a=>a.type===type).sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime()); }
-  async createAnnouncement(insertAnnouncement: any) { const id = randomUUID(); const announcement = { ...insertAnnouncement, id, createdAt: new Date() }; this.announcements.set(id, announcement); return announcement; }
-  async deleteAnnouncement(id: string) { return this.announcements.delete(id); }
-  async getFeedback() { return Array.from(this.feedback.values()).sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime()); }
-  async createFeedback(insertFeedback: any) { const id = randomUUID(); const feedback = { ...insertFeedback, id, name: insertFeedback.name || null, email: insertFeedback.email || null, createdAt: new Date() }; this.feedback.set(id, feedback); return feedback; }
-}
-
-export const storage = new MemStorage();
+  async getAnnouncements() { return Array.from(this.an
