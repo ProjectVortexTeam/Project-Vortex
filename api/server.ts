@@ -1,36 +1,32 @@
-// api/server.ts
 import express from "express";
 import cors from "cors";
+import { nanoid } from "nanoid";
 import { registerRoutes } from "./routes.js";
+import { setupVite, serveStatic, log } from "./vite.js"; // import your vite helpers
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Logger middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: any;
-
-  const originalJson = res.json;
-  res.json = function (body: any, ...args: any[]) {
+  const originalResJson = res.json;
+  res.json = function (body, ...args) {
     capturedJsonResponse = body;
-    return originalJson.apply(res, [body, ...args]);
+    return originalResJson.apply(res, [body, ...args]);
   };
-
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       if (logLine.length > 80) logLine = logLine.slice(0, 79) + "…";
-      console.log(logLine);
+      log(logLine);
     }
   });
-
   next();
 });
 
@@ -41,8 +37,7 @@ app.use((req, res, next) => {
     res.json({ message: "Hello from Project Vortex backend!", timestamp: new Date() });
   });
 
-  // Global error handler
-  app.use((err: any, _req: any, res: any, _next: any) => {
+  app.use((err, _req, res, _next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
     res.status(status).json({ message });
@@ -50,7 +45,7 @@ app.use((req, res, next) => {
   });
 
   const port = parseInt(process.env.PORT || "5000", 10);
-  server.listen(port, "0.0.0.0", () => {
-    console.log(`Backend running on port ${port}`);
+  server.listen({ port, host: "0.0.0.0", reusePort: true }, () => {
+    log(`serving on port ${port}`);
   });
 })();
