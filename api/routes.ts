@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertProxyLinkSchema, insertAnnouncementSchema, insertFeedbackSchema } from "@shared/schema";
+import { insertProxyLinkSchema, insertAnnouncementSchema, insertFeedbackSchema } from "../shared/schema";
 
 // Middleware to ensure only admin (Titanmaster) can access admin routes
 function requireAdmin(req: any, res: any, next: any) {
