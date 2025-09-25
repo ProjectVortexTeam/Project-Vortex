@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type ProxyLink, type InsertProxyLink, type Announcement, type InsertAnnouncement, type Feedback, type InsertFeedback } from "@shared/schema";
+import { type User, type InsertUser, type ProxyLink, type InsertProxyLink, type Announcement, type InsertAnnouncement, type Feedback, type InsertFeedback } from "../shared/schema";
 import { randomUUID } from "crypto";
 import session from "express-session";
 import createMemoryStore from "memorystore";
