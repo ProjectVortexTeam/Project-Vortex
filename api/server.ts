@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes"; // re-use your existing routes
 import { setupAuth } from "./auth";
+import { setupVite, serveStatic, log } from "./vite";
 
 // Create Express app
 const app = express();
