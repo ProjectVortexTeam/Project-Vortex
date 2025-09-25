@@ -21,6 +21,7 @@ export function setupAuth(app: any) {
     saveUninitialized: false,
     store: storage.sessionStore
   };
+
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));
   app.use(passport.initialize());
@@ -29,8 +30,11 @@ export function setupAuth(app: any) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) return done(null, false);
-      return done(null, user);
+      if (!user || !(await comparePasswords(password, user.password))) {
+        return done(null, false);
+      } else {
+        return done(null, user);
+      }
     })
   );
 
@@ -40,22 +44,23 @@ export function setupAuth(app: any) {
     done(null, user);
   });
 
-  app.post("/api/register", async (_req: any, res: any) => {
+  // Routes
+  app.post("/api/register", async (_req, res) => {
     res.status(403).json({ message: "Registration is disabled. Admin access only." });
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req: any, res: any) => {
+  app.post("/api/login", passport.authenticate("local"), (req, res) => {
     res.status(200).json(req.user);
   });
 
-  app.post("/api/logout", (req: any, res: any, next: any) => {
-    req.logout((err: any) => {
+  app.post("/api/logout", (req, res, next) => {
+    req.logout((err) => {
       if (err) return next(err);
       res.sendStatus(200);
     });
   });
 
-  app.get("/api/user", (req: any, res: any) => {
+  app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
